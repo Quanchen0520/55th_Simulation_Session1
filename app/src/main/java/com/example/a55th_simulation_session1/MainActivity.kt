@@ -1,6 +1,7 @@
 package com.example.a55th_simulation_session1
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
@@ -11,8 +12,22 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import android.Manifest
+import android.os.Build
+import androidx.annotation.RequiresApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
     // 宣告變數
@@ -20,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var networkCallback: ConnectivityManager.NetworkCallback  // 網路狀態回調
     private lateinit var tvNetworkStatus: TextView  // 顯示網路狀態的 TextView
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()  // 啟用全螢幕顯示
@@ -31,7 +47,23 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-        val Btn = findViewById<Button>(R.id.button)
+
+        findViewById<Button>(R.id.button).setOnClickListener {
+            try {
+
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO),
+                        102)
+                }
+                // val audioUrl = "https://taira-komori.jpn.org/nature01tw.html/sound_os2/nature01/ocean_wave1.mp3" // 替換成你要下載的音檔 URL
+                val audioUrl = "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download"
+                downloadAudio(audioUrl)
+            } catch (e:Exception) {
+                Log.d("downloaderror", e.toString())
+            }
+        }
 
         // 取得 TextView 元件
         tvNetworkStatus = findViewById(R.id.textView)
@@ -86,41 +118,42 @@ class MainActivity : AppCompatActivity() {
             connectivityManager.unregisterNetworkCallback(callback)  // 取消監聽
         }
     }
+
+    fun downloadAudio(url: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val fileName = "downloaded_audio.mp3"
+                val file = File(getExternalFilesDir(null), fileName)
+                val connection = URL(url).openConnection() as HttpURLConnection
+                try {
+                    connection.requestMethod = "GET"
+                    connection.connect()
+                } catch (e: Exception) {
+                    Log.e("DownloadError", e.toString())
+                }
+                Log.e("DownloadError", "伺服器回應: ${connection.responseCode}")
+
+                val inputStream: InputStream = connection.inputStream
+                val outputStream: OutputStream = file.outputStream()
+
+                val buffer = ByteArray(1024)
+                var bytesRead: Int
+                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                    outputStream.write(buffer, 0, bytesRead)
+                }
+
+                inputStream.close()
+                outputStream.close()
+                connection.disconnect()
+
+                withContext(Dispatchers.Main) {
+                    Log.d("DownloadSuccess", "下載完成: ${file.absolutePath}")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Log.e("DownloadError", "下載失敗: ${e.message}")
+                }
+            }
+        }
+    }
 }
-
-
-//import java.io.File
-//import java.io.InputStream
-//import java.io.OutputStream
-//import java.net.HttpURLConnection
-//import java.net.URL
-//
-//fun downloadAudio(url: String, destinationPath: String) {
-//    val connection = URL(url).openConnection() as HttpURLConnection
-//    connection.requestMethod = "GET"
-//    connection.connect()
-//
-//    val inputStream: InputStream = connection.inputStream
-//    val outputStream: OutputStream = File(destinationPath).outputStream()
-//
-//    val buffer = ByteArray(1024)
-//    var bytesRead: Int
-//
-//    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-//        outputStream.write(buffer, 0, bytesRead)
-//    }
-//
-//    inputStream.close()
-//    outputStream.close()
-//    connection.disconnect()
-//
-//    println("Download complete: $destinationPath")
-//}
-//
-//fun main() {
-//    val audioUrl = "https://example.com/path/to/audiofile.mp3" // 替換成你要下載的音檔 URL
-//    val savePath = "downloaded_audio.mp3" // 保存的檔案名稱
-//
-//    downloadAudio(audioUrl, savePath)
-//}
-
