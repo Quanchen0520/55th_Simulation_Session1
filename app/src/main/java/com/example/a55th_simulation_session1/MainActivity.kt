@@ -125,17 +125,12 @@ class MainActivity : AppCompatActivity() {
                 val fileName = "downloaded_audio.mp3"
                 val file = File(getExternalFilesDir(null), fileName)
                 val connection = URL(url).openConnection() as HttpURLConnection
-                try {
-                    connection.requestMethod = "GET"
-                    connection.connect()
-                } catch (e: Exception) {
-                    Log.e("DownloadError", e.toString())
-                }
-                Log.e("DownloadError", "伺服器回應: ${connection.responseCode}")
+                connection.requestMethod = "GET"
+                connection.connect()
 
+                Log.e("DownloadError", "伺服器回應: ${connection.responseCode}") // 連線成功判斷
                 val inputStream: InputStream = connection.inputStream
                 val outputStream: OutputStream = file.outputStream()
-
                 val buffer = ByteArray(1024)
                 var bytesRead: Int
                 while (inputStream.read(buffer).also { bytesRead = it } != -1) {
