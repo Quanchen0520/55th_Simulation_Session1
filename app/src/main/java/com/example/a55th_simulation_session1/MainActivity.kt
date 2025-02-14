@@ -23,6 +23,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import android.Manifest
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -142,6 +143,7 @@ class MainActivity : AppCompatActivity() {
                 connection.disconnect()
 
                 withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity,"Download Success!", Toast.LENGTH_SHORT).show()
                     Log.d("DownloadSuccess", "下載完成: ${file.absolutePath}")
                 }
             } catch (e: Exception) {
