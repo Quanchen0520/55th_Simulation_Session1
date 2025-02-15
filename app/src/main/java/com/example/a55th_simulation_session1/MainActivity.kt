@@ -25,6 +25,8 @@ import android.Manifest
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,26 +41,20 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()  // 啟用全螢幕顯示
         setContentView(R.layout.activity_main)
 
-        // 設定視圖適應系統邊界
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        val DownloadBtn = findViewById<Button>(R.id.button)
+        val recyclerView = findViewById<RecyclerView>(R.id.recycler)
 
-        findViewById<Button>(R.id.button).setOnClickListener {
+        // 下載 Btn 點擊判斷
+        DownloadBtn.setOnClickListener {
             try {
-
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
                     != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(this,
                         arrayOf(Manifest.permission.READ_MEDIA_AUDIO),
                         102)
                 }
-                // val audioUrl = "https://taira-komori.jpn.org/nature01tw.html/sound_os2/nature01/ocean_wave1.mp3" // 替換成你要下載的音檔 URL
                 val audioUrl = "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download"
                 downloadAudio(audioUrl)
             } catch (e:Exception) {
@@ -76,25 +72,29 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
-
-        // 創建網路監聽器物件
+        // 建立網路監聽器物件
         val networkMonitor = NetworkMonitor(this)
 
-        // 設定網路監聽的回調函式
+        // 網路連線判斷
         val networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                Log.d("NetworkMonitor", "網路可用")  // 輸出日誌
-                runOnUiThread { tvNetworkStatus.text = "網路狀態: 已連線 ✅" }  // 更新 UI
+                Log.d("NetworkMonitor", "網路可用")
+                runOnUiThread { tvNetworkStatus.text = "網路狀態: 已連線 ✅" }
             }
 
             override fun onLost(network: Network) {
-                Log.d("NetworkMonitor", "網路中斷")  // 輸出日誌
-                runOnUiThread { tvNetworkStatus.text = "網路狀態: 已斷線 ❌" }  // 更新 UI
+                Log.d("NetworkMonitor", "網路中斷")
+                runOnUiThread { tvNetworkStatus.text = "網路狀態: 已斷線 ❌" }
             }
         }
 
         // 註冊網路監聽
         networkMonitor.registerNetworkCallback(networkCallback)
+
+        val SongList = listOf("Alice","Bob","Charlie","David")
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = Adapter(SongList)
+
     }
 
     override fun onDestroy() {
@@ -116,7 +116,7 @@ class MainActivity : AppCompatActivity() {
 
         //取消註冊網路監聽
         fun unregisterNetworkCallback(callback: ConnectivityManager.NetworkCallback) {
-            connectivityManager.unregisterNetworkCallback(callback)  // 取消監聽
+            connectivityManager.unregisterNetworkCallback(callback)
         }
     }
 
@@ -129,7 +129,7 @@ class MainActivity : AppCompatActivity() {
                 connection.requestMethod = "GET"
                 connection.connect()
 
-                Log.e("DownloadError", "伺服器回應: ${connection.responseCode}") // 連線成功判斷
+                Log.e("DownloadError", "伺服器回應: ${connection.responseCode}")
                 val inputStream: InputStream = connection.inputStream
                 val outputStream: OutputStream = file.outputStream()
                 val buffer = ByteArray(1024)
