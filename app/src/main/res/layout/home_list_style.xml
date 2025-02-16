@@ -14,7 +14,7 @@
 
         <TextView
             android:id="@+id/SongName"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="15dp"
             android:layout_weight="10"
@@ -31,13 +31,14 @@
             android:backgroundTint="#00FFFFFF"
             app:srcCompat="@drawable/baseline_arrow_circle_down_24" />
 
-        <ImageView
+        <ImageButton
             android:id="@+id/imageView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="5dp"
             android:layout_weight="1"
+            android:backgroundTint="#00FFFFFF"
             app:srcCompat="@drawable/baseline_play_arrow_24" />
 
     </LinearLayout>

@@ -49,21 +49,6 @@ class MainActivity : AppCompatActivity() {
             "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download",
             "https://drive.google.com/uc?id=1b7sJBghbCwW_lEApmSt2BlqXqMqn0MHh&export=download",)
 
-        // 下載 Btn 點擊判斷
-//        DownloadBtn.setOnClickListener {
-//            try {
-//                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
-//                    != PackageManager.PERMISSION_GRANTED) {
-//                    ActivityCompat.requestPermissions(this,
-//                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO),
-//                        102)
-//                }
-//                val audioUrl = "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download"
-//                downloadAudio(audioUrl)
-//            } catch (e:Exception) {
-//                Log.d("downloaderror", e.toString())
-//            }
-//        }
 
         // 取得 TextView 元件
         tvNetworkStatus = findViewById(R.id.textView)
@@ -99,7 +84,7 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = Adapter(songList) { position ->
-            Toast.makeText(this, "已下載: ${songList[position.toInt()]}.mp3", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "已下載: ${songList[position.toInt()]}", Toast.LENGTH_SHORT).show()
             try {
                 val AudioName = songList[position.toInt()]
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
@@ -145,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                 connection.requestMethod = "GET"
                 connection.connect()
 
-                Log.e("DownloadError", "伺服器回應: ${connection.responseCode}")
+                Log.e("Download", "伺服器回應: ${connection.responseCode}")
 
                 val inputStream: InputStream = connection.inputStream
                 val outputStream: OutputStream = file.outputStream()
@@ -161,12 +146,12 @@ class MainActivity : AppCompatActivity() {
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@MainActivity,"Download Success!", Toast.LENGTH_SHORT).show()
-                    Log.d("DownloadSuccess", "下載完成: ${file.absolutePath}")
+                    Log.d("Download", "下載完成: ${file.absolutePath}")
                 }
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Log.e("DownloadError", "下載失敗: ${e.message}")
+                    Log.e("Download", "下載失敗: ${e.message}")
                 }
             }
         }
