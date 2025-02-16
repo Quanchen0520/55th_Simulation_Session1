@@ -3,14 +3,25 @@ package com.example.a55th_simulation_session1
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class Adapter(private val songList: List<String>) :
-    RecyclerView.Adapter<Adapter.UserViewHolder>() {
+class Adapter(
+    private val songList: List<String>,
+    private val onDownloadClick: (String) -> Unit
+) : RecyclerView.Adapter<Adapter.UserViewHolder>() {
 
     class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val songName: TextView = itemView.findViewById(R.id.SongName)
+        val downloadButton: ImageButton = itemView.findViewById(R.id.imageButton)
+
+        fun bind(song: String, position: Int, onDownloadClick: (String) -> Unit) {
+            songName.text = song
+            downloadButton.setOnClickListener {
+                onDownloadClick(position.toString())
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {
@@ -20,8 +31,7 @@ class Adapter(private val songList: List<String>) :
     }
 
     override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
-        val song = songList[position] // song 是 String，不是物件
-        holder.songName.text = song  // 直接賦值給 TextView
+        holder.bind(songList[position],  position, onDownloadClick)
     }
 
     override fun getItemCount(): Int = songList.size

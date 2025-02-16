@@ -43,24 +43,27 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val DownloadBtn = findViewById<Button>(R.id.button)
         val recyclerView = findViewById<RecyclerView>(R.id.recycler)
 
+        val urllist = listOf(
+            "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download",
+            "https://drive.google.com/uc?id=1b7sJBghbCwW_lEApmSt2BlqXqMqn0MHh&export=download",)
+
         // 下載 Btn 點擊判斷
-        DownloadBtn.setOnClickListener {
-            try {
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
-                    != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO),
-                        102)
-                }
-                val audioUrl = "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download"
-                downloadAudio(audioUrl)
-            } catch (e:Exception) {
-                Log.d("downloaderror", e.toString())
-            }
-        }
+//        DownloadBtn.setOnClickListener {
+//            try {
+//                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+//                    != PackageManager.PERMISSION_GRANTED) {
+//                    ActivityCompat.requestPermissions(this,
+//                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO),
+//                        102)
+//                }
+//                val audioUrl = "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download"
+//                downloadAudio(audioUrl)
+//            } catch (e:Exception) {
+//                Log.d("downloaderror", e.toString())
+//            }
+//        }
 
         // 取得 TextView 元件
         tvNetworkStatus = findViewById(R.id.textView)
@@ -72,6 +75,7 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
         // 建立網路監聽器物件
         val networkMonitor = NetworkMonitor(this)
 
@@ -91,10 +95,23 @@ class MainActivity : AppCompatActivity() {
         // 註冊網路監聽
         networkMonitor.registerNetworkCallback(networkCallback)
 
-        val SongList = listOf("Alice","Bob","Charlie","David")
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = Adapter(SongList)
+        val songList = listOf("ocean_wave", "rain_thunder", "Charlie", "David")
 
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = Adapter(songList) { position ->
+            Toast.makeText(this, "已下載: ${songList[position.toInt()]}.mp3", Toast.LENGTH_SHORT).show()
+            try {
+                val AudioName = songList[position.toInt()]
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+                    != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO), 102)
+                }
+                downloadAudio(urllist[position.toInt()], AudioName)
+            } catch (e:Exception) {
+                Log.d("downloaderror", e.toString())
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -120,16 +137,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun downloadAudio(url: String) {
+    fun downloadAudio(url: String, fileName: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val fileName = "downloaded_audio.mp3"
                 val file = File(getExternalFilesDir(null), fileName)
                 val connection = URL(url).openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connect()
 
                 Log.e("DownloadError", "伺服器回應: ${connection.responseCode}")
+
                 val inputStream: InputStream = connection.inputStream
                 val outputStream: OutputStream = file.outputStream()
                 val buffer = ByteArray(1024)
@@ -146,6 +163,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity,"Download Success!", Toast.LENGTH_SHORT).show()
                     Log.d("DownloadSuccess", "下載完成: ${file.absolutePath}")
                 }
+
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     Log.e("DownloadError", "下載失敗: ${e.message}")
