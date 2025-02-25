@@ -22,11 +22,13 @@ import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import android.Manifest
+import android.media.MediaPlayer
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -37,29 +39,23 @@ class MainActivity : AppCompatActivity() {
     private lateinit var networkMonitor: NetworkMonitor  // 負責監聽網路狀態
     private lateinit var networkCallback: ConnectivityManager.NetworkCallback  // 網路狀態回調
     private lateinit var tvNetworkStatus: TextView  // 顯示網路狀態的 TextView
+    private var mediaPlayer: MediaPlayer? = null
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recycler)
+        // val recyclerView = findViewById<RecyclerView>(R.id.recycler)
 
         val urllist = listOf(
             "https://drive.google.com/uc?id=1VerV2SI1HNJCtUVjW0Vh__uvIdZrR9vs&export=download",
-            "https://drive.google.com/uc?id=1b7sJBghbCwW_lEApmSt2BlqXqMqn0MHh&export=download",)
-
+            "https://drive.google.com/uc?id=1b7sJBghbCwW_lEApmSt2BlqXqMqn0MHh&export=download",
+            "https://drive.google.com/uc?id=1F5oLYOPD3KbMAEK7Sz72Yg9ZE94kfpUV&export=download",
+            "https://drive.google.com/uc?id=1yH2VQ6dm51zmOMEyiygJzZ1gTZ2H66a_&export=download")
 
         // 取得 TextView 元件
         tvNetworkStatus = findViewById(R.id.textView)
-
-        // 設定 rootView，適應系統邊界
-        val rootView = findViewById<View>(android.R.id.content)
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
 
         // 建立網路監聽器物件
         val networkMonitor = NetworkMonitor(this)
@@ -67,12 +63,10 @@ class MainActivity : AppCompatActivity() {
         // 網路連線判斷
         val networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                Log.d("NetworkMonitor", "網路可用")
                 runOnUiThread { tvNetworkStatus.text = "網路狀態: 已連線 ✅" }
             }
 
             override fun onLost(network: Network) {
-                Log.d("NetworkMonitor", "網路中斷")
                 runOnUiThread { tvNetworkStatus.text = "網路狀態: 已斷線 ❌" }
             }
         }
@@ -80,23 +74,41 @@ class MainActivity : AppCompatActivity() {
         // 註冊網路監聽
         networkMonitor.registerNetworkCallback(networkCallback)
 
-        val songList = listOf("ocean_wave", "rain_thunder", "Charlie", "David")
+        val viewPager = findViewById<ViewPager2>(R.id.ViewPager)
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = Adapter(songList) { position ->
-            Toast.makeText(this, "已下載: ${songList[position.toInt()]}", Toast.LENGTH_SHORT).show()
-            try {
-                val AudioName = songList[position.toInt()]
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
-                    != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                        arrayOf(Manifest.permission.READ_MEDIA_AUDIO), 102)
-                }
-                downloadAudio(urllist[position.toInt()], AudioName)
-            } catch (e:Exception) {
-                Log.d("downloaderror", e.toString())
+        val songList = listOf("Ocean Wave", "Rain Thunder", "Brook", "Jungle")
+
+        val imageList = listOf(
+            R.drawable.ocean_wave,
+            R.drawable.rain_thunder,
+            R.drawable.brook,
+            R.drawable.glassland)
+
+        val adapter = Adapter(songList, imageList, urllist,
+            onDownloadClick = { position ->
+                downloadAudio(urllist[position], songList[position])
+                Toast.makeText(this, "下載歌曲: ${songList[position]}", Toast.LENGTH_SHORT).show()
+            },
+            onPlayClick = { url ->
+                playAudio(url) // 點擊後播放音樂
             }
-        }
+        )
+
+        viewPager.adapter = adapter
+
+//        val songList = listOf("ocean_wave", "rain_thunder", "Charlie", "David")
+//
+//        recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+//        recyclerView.adapter = Adapter(songList) { position ->
+//            Toast.makeText(this, "已下載: ${songList[position]}", Toast.LENGTH_SHORT).show()
+//            val AudioName = songList[position]
+//            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO)
+//                != PackageManager.PERMISSION_GRANTED) {
+//                ActivityCompat.requestPermissions(this,
+//                    arrayOf(Manifest.permission.READ_MEDIA_AUDIO), 102)
+//            }
+//            downloadAudio(urllist[position], AudioName)
+//        }
     }
 
     override fun onDestroy() {
@@ -122,7 +134,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun downloadAudio(url: String, fileName: String) {
+    private fun downloadAudio(url: String, fileName: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val file = File(getExternalFilesDir(null), fileName)
@@ -154,6 +166,24 @@ class MainActivity : AppCompatActivity() {
                     Log.e("Download", "下載失敗: ${e.message}")
                 }
             }
+        }
+    }
+
+    private fun playAudio(url: String) {
+        try {
+            mediaPlayer?.release() // 釋放舊的 MediaPlayer
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(url)
+                prepareAsync()
+                setOnPreparedListener { start() }
+                setOnErrorListener { _, what, extra ->
+                    Log.e("MediaPlayer", "播放錯誤: what=$what, extra=$extra")
+                    //Toast.makeText(context, "播放失敗", Toast.LENGTH_SHORT).show()
+                    true
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("MediaPlayer", "初始化錯誤: ${e.message}")
         }
     }
 }
