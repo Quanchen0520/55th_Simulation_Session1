@@ -47,4 +47,20 @@
         app:layout_constraintTop_toBottomOf="@+id/SongName"
         app:srcCompat="@drawable/baseline_play_arrow_24" />
 
+    <ProgressBar
+        android:id="@+id/loadingProgressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="@+id/imageBtn"
+        app:layout_constraintTop_toBottomOf="@+id/imageBtn" />
+
+    <SeekBar
+        android:id="@+id/playbackSeekBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/playBtn" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
