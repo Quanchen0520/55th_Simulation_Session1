@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity() {
 
         adapter = Adapter(
             songList = songList,
-            imageList = imageList,
+            //imageList = imageList,
             musicList = musicItemList,
             onDownloadClick = { position ->
                 musicItemList[position].SongName?.let {
@@ -68,9 +68,10 @@ class MainActivity : AppCompatActivity() {
                     urllist.clear()
                     musicItemList.clear()
 
-                    musicList.map { it.SongName }.let { songList.addAll(it) }
-                    musicList.map { it.imageURL }.let { imageList.addAll(it) }
-                    musicList.map { it.SongURL }.let { urllist.addAll(it) }
+                    musicList.mapNotNull { it.SongName }.let { songList.addAll(it) }
+                    musicList.mapNotNull { it.imageURL }.let { imageList.addAll(it) }
+                    musicList.mapNotNull { it.SongURL }.let { urllist.addAll(it) }
+
                     musicItemList.addAll(musicList)
 
                     adapter.notifyDataSetChanged()

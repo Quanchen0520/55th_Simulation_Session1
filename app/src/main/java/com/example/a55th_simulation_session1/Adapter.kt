@@ -16,10 +16,9 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.load
 
 class Adapter(
-    private val songList: List<String>, // 歌曲名稱列表
-    private val imageList: List<String>, // 對應圖片資源 ID 列表
-    private var musicList: List<MusicItem>, // 動態音樂列表
-    private val onDownloadClick: (Int) -> Unit // 下載按鈕點擊事件回調
+    private val songList: List<String>,
+    private var musicList: List<MusicItem>,
+    private val onDownloadClick: (Int) -> Unit
 ) : RecyclerView.Adapter<Adapter.UserViewHolder>() {
 
     private var mediaPlayer: MediaPlayer? = null
@@ -30,10 +29,7 @@ class Adapter(
     private val downloadProgressMap = HashMap<Int, Int>()
     private val downloadCompleted = HashMap<Int, Boolean>()
 
-//    private var musicList: List<MusicItem> = emptyList() // 動態音樂列表
-
     inner class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val songName: TextView = itemView.findViewById(R.id.SongName)
         val songImage: ImageView = itemView.findViewById(R.id.imageView9)
         val downloadButton: ImageButton = itemView.findViewById(R.id.imageBtn)
         val playBtn: ImageButton = itemView.findViewById(R.id.playBtn)
@@ -42,7 +38,7 @@ class Adapter(
 
 
         fun bind(position: Int, songName: String, imageUrl: String) {
-            val musicItem = musicList[position] // 取得當前歌曲
+            val musicItem = musicList[position]
 
             itemView.findViewById<TextView>(R.id.SongName).text = songName
             songImage.load(imageUrl)
