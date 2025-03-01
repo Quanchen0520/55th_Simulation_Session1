@@ -7,27 +7,21 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.SeekBar
-import android.widget.TextView
+import android.widget.*
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
 
 class Adapter(
-    private val songList: List<String>,
-    private var musicList: List<MusicItem>,
+    private val musicList: List<MusicItem>,
     private val onDownloadClick: (Int) -> Unit
 ) : RecyclerView.Adapter<Adapter.UserViewHolder>() {
-
     private var mediaPlayer: MediaPlayer? = null
     private var currentlyPlayingPosition: Int? = null
     private val handler = Handler(Looper.getMainLooper())
     private val seekBarUpdateRunnable = HashMap<Int, Runnable>()
-    private val downloadsInProgress = HashMap<Int, Boolean>()
-    private val downloadProgressMap = HashMap<Int, Int>()
-    private val downloadCompleted = HashMap<Int, Boolean>()
+    private val downloadsInProgress = mutableMapOf<Int, Boolean>()
+    private val downloadProgressMap = mutableMapOf<Int, Int>()
+    private val downloadCompleted = mutableMapOf<Int, Boolean>()
 
     inner class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val songImage: ImageView = itemView.findViewById(R.id.imageView9)
@@ -36,66 +30,43 @@ class Adapter(
         val loadingProgressBar: ProgressBar = itemView.findViewById(R.id.loadingProgressBar)
         val playbackSeekBar: SeekBar = itemView.findViewById(R.id.playbackSeekBar)
 
+        fun bind(position: Int, musicItem: MusicItem) {
+            itemView.findViewById<TextView>(R.id.SongName).text = musicItem.SongName
+            songImage.load(musicItem.imageURL)
+            setupUI(position)
+            setupListeners(position, musicItem.SongURL)
+        }
 
-        fun bind(position: Int, songName: String, imageUrl: String) {
-            val musicItem = musicList[position]
-
-            itemView.findViewById<TextView>(R.id.SongName).text = songName
-            songImage.load(imageUrl)
-
-            setupInitialState(position)
-
-            if (downloadCompleted[position] == true) {
-                downloadButton.setImageResource(R.drawable.baseline_cloud_done_24)
-                downloadButton.isEnabled = false
-            } else {
-                downloadButton.setImageResource(R.drawable.baseline_arrow_circle_down_24)
-                downloadButton.isEnabled = true
+        private fun setupUI(position: Int) {
+            playBtn.setImageResource(if (currentlyPlayingPosition == position) R.drawable.baseline_stop_circle_24 else R.drawable.baseline_play_arrow_24)
+            playbackSeekBar.visibility = if (currentlyPlayingPosition == position) View.VISIBLE else View.GONE
+            loadingProgressBar.apply {
+                visibility = if (downloadsInProgress[position] == true) View.VISIBLE else View.GONE
+                progress = downloadProgressMap[position] ?: 0
             }
-
-            if (downloadsInProgress[position] == true) {
-                loadingProgressBar.visibility = View.VISIBLE
-                loadingProgressBar.progress = downloadProgressMap[position] ?: 0
-            } else {
-                loadingProgressBar.visibility = View.GONE
+            downloadButton.apply {
+                setImageResource(if (downloadCompleted[position] == true) R.drawable.baseline_cloud_done_24 else R.drawable.baseline_arrow_circle_down_24)
+                isEnabled = downloadCompleted[position] != true
             }
+        }
 
-            playBtn.setOnClickListener {
-                if (currentlyPlayingPosition == position) {
-                    stopAudio()
-                } else {
-                    musicItem.SongURL?.let { it1 -> playAudio(it1, position, this) }
-                }
-            }
-
-            downloadButton.setOnClickListener {
-                if (downloadCompleted[position] != true) {
-                    downloadsInProgress[position] = true
-                    loadingProgressBar.visibility = View.VISIBLE
-                    loadingProgressBar.progress = 0
-                    onDownloadClick(position)
-                }
-            }
-
+        private fun setupListeners(position: Int, url: String?) {
+            playBtn.setOnClickListener { if (currentlyPlayingPosition == position) stopAudio() else url?.let { playAudio(it, position, this) } }
+            downloadButton.setOnClickListener { if (downloadCompleted[position] != true) startDownload(position) }
             playbackSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (fromUser) {
-                        mediaPlayer?.seekTo(progress * mediaPlayer!!.duration / 100)
-                    }
+                    if (fromUser) mediaPlayer?.seekTo(progress * mediaPlayer!!.duration / 100)
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
             })
         }
 
-        private fun setupInitialState(position: Int) {
-            playBtn.setImageResource(
-                if (currentlyPlayingPosition == position) R.drawable.baseline_stop_circle_24
-                else R.drawable.baseline_play_arrow_24
-            )
-            playbackSeekBar.visibility = if (currentlyPlayingPosition == position) View.VISIBLE else View.GONE
-            loadingProgressBar.visibility = if (downloadsInProgress[position] == true) View.VISIBLE else View.GONE
-            loadingProgressBar.progress = downloadProgressMap[position] ?: 0
+        private fun startDownload(position: Int) {
+            downloadsInProgress[position] = true
+            loadingProgressBar.visibility = View.VISIBLE
+            loadingProgressBar.progress = 0
+            onDownloadClick(position)
         }
     }
 
@@ -104,13 +75,10 @@ class Adapter(
     )
 
     override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
-        if (position >= musicList.size) return  // Prevent out of bounds exception
-        val musicItem = musicList[position]
-        musicItem.imageURL?.let { musicItem.SongName?.let { it1 -> holder.bind(position, it1, it) } }
+        musicList.getOrNull(position)?.let { holder.bind(position, it) }
     }
 
-
-    override fun getItemCount() = songList.size
+    override fun getItemCount() = musicList.size
 
     fun updateDownloadProgress(position: Int, progress: Int) {
         downloadProgressMap[position] = progress
@@ -124,26 +92,20 @@ class Adapter(
     private fun playAudio(url: String, position: Int, holder: UserViewHolder) {
         stopAudio()
         currentlyPlayingPosition = position
-
         holder.playBtn.setImageResource(R.drawable.baseline_stop_circle_24)
         holder.playbackSeekBar.visibility = View.VISIBLE
-
         mediaPlayer = MediaPlayer().apply {
             setDataSource(url)
-            setOnPreparedListener {
-                start()
-                updateSeekBar(position, holder)
-            }
+            setOnPreparedListener { start(); updateSeekBar(position, holder) }
             setOnCompletionListener { stopAudio() }
             prepareAsync()
         }
     }
 
     private fun stopAudio() {
-        currentlyPlayingPosition?.let { prevPosition ->
-            seekBarUpdateRunnable[prevPosition]?.let { handler.removeCallbacks(it) }
-            seekBarUpdateRunnable.remove(prevPosition)
-            notifyItemChanged(prevPosition)
+        currentlyPlayingPosition?.let {
+            seekBarUpdateRunnable.remove(it)?.let { handler.removeCallbacks(it) }
+            notifyItemChanged(it)
         }
         mediaPlayer?.release()
         mediaPlayer = null
@@ -155,9 +117,8 @@ class Adapter(
             override fun run() {
                 mediaPlayer?.let { player ->
                     if (player.isPlaying) {
-                        val progress = (player.currentPosition * 100) / player.duration
-                        holder.playbackSeekBar.progress = progress
-                        handler.postDelayed(this, 500)
+                        holder.playbackSeekBar.progress = (player.currentPosition * 100) / player.duration
+                        handler.postDelayed(this, 500)  // 這裡的 `this` 指的是 `Runnable`，而不是 `Adapter`
                     }
                 }
             }

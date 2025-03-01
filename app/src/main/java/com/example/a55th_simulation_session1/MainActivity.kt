@@ -44,8 +44,6 @@ class MainActivity : AppCompatActivity() {
         val viewPager = findViewById<ViewPager2>(R.id.ViewPager)
 
         adapter = Adapter(
-            songList = songList,
-            //imageList = imageList,
             musicList = musicItemList,
             onDownloadClick = { position ->
                 musicItemList[position].SongName?.let {
@@ -116,46 +114,37 @@ class MainActivity : AppCompatActivity() {
 
     private fun downloadAudio(url: String, fileName: String, position: Int) {
         CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val file = File(getExternalFilesDir(null), fileName)
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connect()
+            val file = File(getExternalFilesDir(null), fileName)
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connect()
 
-                Log.e("Download", "伺服器回應: ${connection.responseCode}")
+            Log.e("Download", "伺服器回應: ${connection.responseCode}")
 
-                val inputStream: InputStream = connection.inputStream
-                val outputStream: OutputStream = file.outputStream()
-                val buffer = ByteArray(1024)
-                var bytesRead: Int
-                var totalBytes = 0
-                val fileSize = connection.contentLength
+            val inputStream: InputStream = connection.inputStream
+            val outputStream: OutputStream = file.outputStream()
+            val buffer = ByteArray(1024)
+            var bytesRead: Int
+            var totalBytes = 0
+            val fileSize = connection.contentLength
 
-                while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                    outputStream.write(buffer, 0, bytesRead)
-                    totalBytes += bytesRead
-                    val progress = (totalBytes * 100) / fileSize
-
-                    withContext(Dispatchers.Main) {
-                        adapter.updateDownloadProgress(position, progress)
-                    }
-                }
-
-                inputStream.close()
-                outputStream.close()
-                connection.disconnect()
+            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+                totalBytes += bytesRead
+                val progress = (totalBytes * 100) / fileSize
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "Download Success!", Toast.LENGTH_SHORT).show()
-                    Log.d("Download", "下載完成: ${file.absolutePath}")
-                    adapter.updateDownloadProgress(position, 100)
+                    adapter.updateDownloadProgress(position, progress)
                 }
+            }
 
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Log.e("Download", "下載失敗: ${e.message}")
-                    e.printStackTrace()
-                }
+            inputStream.close()
+            outputStream.close()
+            connection.disconnect()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(this@MainActivity, "Download Success!", Toast.LENGTH_SHORT).show()
+                Log.d("Download", "下載完成: ${file.absolutePath}")
+                adapter.updateDownloadProgress(position, 100)
             }
         }
     }
