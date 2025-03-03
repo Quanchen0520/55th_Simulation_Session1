@@ -65,13 +65,10 @@ class MainActivity : AppCompatActivity() {
                     imageList.clear()
                     urllist.clear()
                     musicItemList.clear()
-
                     musicList.mapNotNull { it.SongName }.let { songList.addAll(it) }
                     musicList.mapNotNull { it.imageURL }.let { imageList.addAll(it) }
                     musicList.mapNotNull { it.SongURL }.let { urllist.addAll(it) }
-
                     musicItemList.addAll(musicList)
-
                     adapter.notifyDataSetChanged()
                 } else {
                     Toast.makeText(this, "無音樂資料", Toast.LENGTH_SHORT).show()

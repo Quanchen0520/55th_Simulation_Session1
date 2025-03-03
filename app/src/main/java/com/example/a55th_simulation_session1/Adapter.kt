@@ -39,51 +39,69 @@ class Adapter(
 
         private fun setupUI(position: Int) {
             playBtn.setImageResource(
-                if (currentlyPlayingPosition == position)
+                if (currentlyPlayingPosition == position) {
                     R.drawable.baseline_stop_circle_24
-                else
+
+                }
+                else {
                     R.drawable.baseline_play_arrow_24
+
+                }
             )
 
             playbackSeekBar.visibility =
-                if (currentlyPlayingPosition == position)
+                if (currentlyPlayingPosition == position) {
                     View.VISIBLE
-                else
+                }
+                else {
                     View.GONE
-
+                }
             loadingProgressBar.apply {
                 visibility =
-                    if (downloadsInProgress[position] == true)
+                    if (downloadsInProgress[position] == true) {
                         View.VISIBLE
-                    else View.GONE
+
+                    }
+                    else {
+                        View.GONE
+                    }
                 progress = downloadProgressMap[position] ?: 0
             }
 
             downloadButton.apply {
                 setImageResource(
-                    if (downloadCompleted[position] == true)
+                    if (downloadCompleted[position] == true) {
                         R.drawable.baseline_cloud_done_24
-                    else
-                        R.drawable.baseline_arrow_circle_down_24)
+                    }
+                    else {
+                        R.drawable.baseline_arrow_circle_down_24
+                    }
+                )
                 isEnabled = downloadCompleted[position] != true
             }
         }
 
         private fun setupListeners(position: Int, url: String?) {
             playBtn.setOnClickListener {
-                if (currentlyPlayingPosition == position)
+                if (currentlyPlayingPosition == position) {
                     stopAudio()
-                else url?.let {
-                    playAudio(it, position, this)
+                }
+                else {
+                    url?.let {
+                        playAudio(it, position, this)
+                    }
                 }
             }
             downloadButton.setOnClickListener {
-                if (downloadCompleted[position] != true)
+                if (downloadCompleted[position] != true) {
                     startDownload(position)
+                }
             }
             playbackSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (fromUser) mediaPlayer?.seekTo(progress * mediaPlayer!!.duration / 100)
+                    if (fromUser) {
+                        mediaPlayer?.seekTo(progress * mediaPlayer!!.duration / 100)
+                    }
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {
 
