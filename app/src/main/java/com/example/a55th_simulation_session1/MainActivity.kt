@@ -25,10 +25,13 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
+    // 定義網路監測器
     private lateinit var networkMonitor: NetworkMonitor
     private lateinit var networkCallback: ConnectivityManager.NetworkCallback
     private lateinit var tvNetworkStatus: TextView
     private lateinit var adapter: Adapter
+
+    // 用來存放歌曲資訊的列表
     private val songList = mutableListOf<String>()
     private val imageList = mutableListOf<String>()
     private val urllist = mutableListOf<String>()
@@ -40,17 +43,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // 取得 UI 中的 TextView
         tvNetworkStatus = findViewById(R.id.textView)
         val viewPager = findViewById<ViewPager2>(R.id.ViewPager)
 
+        // 初始化 Adapter，並設定點擊下載按鈕時的事件
         adapter = Adapter(
             musicList = musicItemList,
             onDownloadClick = { position ->
-                musicItemList[position].SongName?.let {
-                    musicItemList[position].SongURL?.let { it1 ->
-                        downloadAudio(
-                            it1,
-                            it, position)
+                musicItemList[position].SongName?.let { songName ->
+                    musicItemList[position].SongURL?.let { songUrl ->
+                        downloadAudio(songUrl, songName, position)
                     }
                 }
                 Toast.makeText(this, "下載歌曲: ${musicItemList[position].SongName}", Toast.LENGTH_SHORT).show()
@@ -58,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         )
         viewPager.adapter = adapter
 
+        // 從 MusicRepository 取得音樂列表
         MusicRepository.fetchMusicList { musicList ->
             runOnUiThread {
                 if (musicList.isNotEmpty()) {
@@ -65,10 +69,13 @@ class MainActivity : AppCompatActivity() {
                     imageList.clear()
                     urllist.clear()
                     musicItemList.clear()
+
+                    // 將資料存入對應的列表
                     musicList.mapNotNull { it.SongName }.let { songList.addAll(it) }
                     musicList.mapNotNull { it.imageURL }.let { imageList.addAll(it) }
                     musicList.mapNotNull { it.SongURL }.let { urllist.addAll(it) }
                     musicItemList.addAll(musicList)
+
                     adapter.notifyDataSetChanged()
                 } else {
                     Toast.makeText(this, "無音樂資料", Toast.LENGTH_SHORT).show()
@@ -76,6 +83,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // 初始化網路監測器
         networkMonitor = NetworkMonitor(this)
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
@@ -95,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         adapter.releaseResources()
     }
 
+    // 網路監測器類別
     class NetworkMonitor(context: Context) {
         private val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -109,9 +118,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 音樂下載函式
     private fun downloadAudio(url: String, fileName: String, position: Int) {
         CoroutineScope(Dispatchers.IO).launch {
-            val file = File(getExternalFilesDir(null), fileName)
+            val file = File(getExternalFilesDir(null), fileName) // 取得下載存放位置
             val connection = URL(url).openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.connect()
@@ -125,11 +135,13 @@ class MainActivity : AppCompatActivity() {
             var totalBytes = 0
             val fileSize = connection.contentLength
 
+            // 讀取下載的數據並寫入檔案
             while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                 outputStream.write(buffer, 0, bytesRead)
                 totalBytes += bytesRead
                 val progress = (totalBytes * 100) / fileSize
 
+                // 在主執行緒更新 UI
                 withContext(Dispatchers.Main) {
                     adapter.updateDownloadProgress(position, progress)
                 }
@@ -138,8 +150,10 @@ class MainActivity : AppCompatActivity() {
             inputStream.close()
             outputStream.close()
             connection.disconnect()
+
+            // 下載完成通知使用者
             withContext(Dispatchers.Main) {
-                Toast.makeText(this@MainActivity, "Download Success!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "下載完成!", Toast.LENGTH_SHORT).show()
                 Log.d("Download", "下載完成: ${file.absolutePath}")
                 adapter.updateDownloadProgress(position, 100)
             }
