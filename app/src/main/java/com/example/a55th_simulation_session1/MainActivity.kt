@@ -6,12 +6,10 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkRequest
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +36,6 @@ class MainActivity : AppCompatActivity() {
     private val musicItemList = mutableListOf<MusicItem>()
 
     @SuppressLint("NotifyDataSetChanged")
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -48,18 +45,17 @@ class MainActivity : AppCompatActivity() {
         val viewPager = findViewById<ViewPager2>(R.id.ViewPager)
 
         // 初始化 Adapter，並設定點擊下載按鈕時的事件
-        adapter = Adapter(
+        viewPager.adapter = Adapter(
             musicList = musicItemList,
             onDownloadClick = { position ->
-                musicItemList[position].SongName?.let { songName ->
-                    musicItemList[position].SongURL?.let { songUrl ->
-                        downloadAudio(songUrl, songName, position)
-                    }
+                val songName = musicItemList[position].SongName
+                val songUrl = musicItemList[position].SongURL
+                if (songName != null && songUrl != null) {
+                    downloadAudio(songUrl, songName, position)
+                    Toast.makeText(this, "下載歌曲: $songName", Toast.LENGTH_SHORT).show()
                 }
-                Toast.makeText(this, "下載歌曲: ${musicItemList[position].SongName}", Toast.LENGTH_SHORT).show()
             }
         )
-        viewPager.adapter = adapter
 
         // 從 MusicRepository 取得音樂列表
         MusicRepository.fetchMusicList { musicList ->
@@ -70,10 +66,10 @@ class MainActivity : AppCompatActivity() {
                     urllist.clear()
                     musicItemList.clear()
 
-                    // 將資料存入對應的列表
-                    musicList.mapNotNull { it.SongName }.let { songList.addAll(it) }
-                    musicList.mapNotNull { it.imageURL }.let { imageList.addAll(it) }
-                    musicList.mapNotNull { it.SongURL }.let { urllist.addAll(it) }
+                    // 直接使用 mapNotNull，不需要 let
+                    songList.addAll(musicList.mapNotNull { it.SongName })
+                    imageList.addAll(musicList.mapNotNull { it.imageURL })
+                    urllist.addAll(musicList.mapNotNull { it.SongURL })
                     musicItemList.addAll(musicList)
 
                     adapter.notifyDataSetChanged()
@@ -82,6 +78,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
 
         // 初始化網路監測器
         networkMonitor = NetworkMonitor(this)

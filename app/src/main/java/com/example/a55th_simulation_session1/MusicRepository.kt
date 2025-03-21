@@ -5,7 +5,8 @@ import java.io.IOException
 
 object MusicRepository {
     private val client = OkHttpClient()
-    private const val JSON_URL = "https://drive.google.com/uc?id=1Civ_XqRNn49IFHIvlIP1sJng-xE0UG2h&export=download"
+    private const val JSON_URL =
+        "https://drive.google.com/uc?id=1Civ_XqRNn49IFHIvlIP1sJng-xE0UG2h&export=download"
 
     fun fetchMusicList(callback: (List<MusicItem>) -> Unit) {
         val request = Request.Builder().url(JSON_URL).build()
